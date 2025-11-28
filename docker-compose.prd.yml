@@ -33,6 +33,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
 
   ingress:
     image: ghcr.io/kdw8219/ingress-rust:latest
