@@ -1,0 +1,71 @@
+services:
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+
+  kafka-broker:
+    image: apache/kafka:latest
+    platform: linux/amd64
+    env_file:
+      - ./env/prd/kafka-broker.env
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    env_file:
+      - ./env/prd/kafka-ui.env
+
+  kafka-init:
+    image: apache/kafka:latest
+    platform: linux/amd64
+    entrypoint: "/bin/sh"
+    command: [ "-c", " echo 'Waiting for kafka...'; for i in 1 2 3 4 5 6 7 8 9 10; do /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-broker:9092 --list >/dev/null 2>&1 && break; echo 'retry...'; sleep 2; done; echo 'Running topic script'; sh /topic-scripts/topic_checker.sh; echo 'Done';" ]
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    env_file:
+      - ./env/prd/timescale.env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U dk -d robot_stat_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  ingress:
+    image: ghcr.io/kdw8219/ingress-rust:latest
+    env_file:
+      - ./env/prd/ingress.env
+
+  robot-api:
+    image: ghcr.io/kdw8219/robot-api-gateway:latest
+    env_file:
+      - ./env/prd/robot-api.env
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    entrypoint: [ "sh", "/redis-entrypoint.sh" ]
+    env_file:
+      - ./env/prd/redis.env
+    restart: always
+
+  auth:
+    image: ghcr.io/kdw8219/auth-service:latest
+    env_file:
+      - ./env/prd/auth.env
+
+  robots:
+    image: ghcr.io/kdw8219/robot-service:latest
+    env_file:
+      - ./env/prd/robots.env
+
+  user:
+    image: ghcr.io/kdw8219/user-service:latest
+    env_file:
+      - ./env/prd/user.env
+
+  django-ssr:
+    image: ghcr.io/kdw8219/django-ssr:latest
+    env_file:
+      - ./env/prd/django.env

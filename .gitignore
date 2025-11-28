@@ -1,0 +1,14 @@
+env/prd/auth.env
+env/prd/django.env
+env/prd/ingress.env
+env/prd/kafka-broker.env
+env/prd/kafka-ui.env
+env/prd/redis.env
+env/prd/robot-api.env
+env/prd/robots.env
+env/prd/timescale.env
+env/prd/user.env
+redis/data/dump.rdb
+docker-compose-bkup.yml
+docker-compose.dev.yml
+redis/data/*

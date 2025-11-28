@@ -1,0 +1,108 @@
+version: '3.9'
+
+services:
+  nginx:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "80:80"
+    volumes:
+      - static_volume:/app/static
+    depends_on:
+      - django-ssr
+
+  kafka-broker:
+    expose:
+      - "9092"
+      - "9093"
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    volumes:
+      - ./kafka/kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: [ "CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  kafka-ui:
+    ports:
+      - "8090:8080"
+    depends_on:
+      - kafka-broker
+
+  kafka-init:
+    depends_on:
+      - kafka-broker
+    volumes:
+      - ./kafka/script:/topic-scripts:ro
+
+  timescaledb:
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./timescale/data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d:ro
+
+  ingress:
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+      timescaledb:
+        condition: service_started
+
+  robot-api:
+    expose:
+      - "8000"
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+
+  redis:
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/data:/data
+      - ./conf/redis/base.conf:/base.conf:ro
+      - ./conf/redis/redis-entrypoint.sh:/redis-entrypoint.sh:ro
+
+  auth:
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - timescaledb
+
+  robots:
+    ports:
+      - "3001:3001"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+
+  user:
+    ports:
+      - "3000:3000"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+
+  django-ssr:
+    expose:
+      - "8000"
+    depends_on:
+      - kafka-broker
+      - timescaledb
+      - redis
+      - auth
+      - robots
+      - user
+
+volumes:
+  static_volume:
+    name: django-ssr_static_volume
+
+networks:
+  default:
+    name: robot-network
