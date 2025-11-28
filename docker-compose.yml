@@ -102,6 +102,7 @@ services:
       - user
 
 volumes:
+  timescale-data:
   static_volume:
     name: django-ssr_static_volume
 
