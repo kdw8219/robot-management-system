@@ -12,3 +12,5 @@ redis/data/dump.rdb
 docker-compose-bkup.yml
 docker-compose.dev.yml
 redis/data/*
+ssl/fullchain.pem
+ssl/privkey.pem

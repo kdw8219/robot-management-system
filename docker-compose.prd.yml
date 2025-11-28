@@ -3,6 +3,8 @@ services:
     image: nginx:latest
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./ssl/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
+      - ./ssl/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
 
   kafka-broker:
     image: apache/kafka:latest
