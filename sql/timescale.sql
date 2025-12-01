@@ -3,6 +3,7 @@ CREATE EXTENSION IF NOT EXISTS timescaledb;
 CREATE TABLE robot_heartbeat (
     robot_id     TEXT NOT NULL,
     is_alive     BOOLEAN NOT NULL,
+    stream_ip     TEXT NOT NULL,
     timestamp           TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (robot_id, timestamp)
 );
