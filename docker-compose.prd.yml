@@ -5,6 +5,7 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./ssl/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
       - ./ssl/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
+      - ./django-ssr/static:/app/static
 
   kafka-broker:
     image: apache/kafka:latest
