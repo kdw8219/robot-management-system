@@ -69,6 +69,14 @@ services:
       - ./conf/redis/base.conf:/base.conf:ro
       - ./conf/redis/redis-entrypoint.sh:/redis-entrypoint.sh:ro
 
+  redis_ssr:
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./redis_ssr/data:/data
+      - ./conf/redis/base.conf:/base.conf:ro
+      - ./conf/redis/redis-entrypoint.sh:/redis-entrypoint.sh:ro
+
   auth:
     ports:
       - "8080:8080"
