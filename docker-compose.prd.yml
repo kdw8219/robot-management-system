@@ -73,3 +73,11 @@ services:
     image: ghcr.io/kdw8219/django-ssr:latest
     env_file:
       - ./env/prd/django.env
+
+  redis_ssr:
+    image: redis:7-alpine
+    container_name: redis_ssr
+    entrypoint: [ "sh", "/redis-entrypoint.sh" ]
+    env_file:
+      - ./env/prd/redis.env
+    restart: always
