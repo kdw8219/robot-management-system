@@ -14,3 +14,4 @@ docker-compose.dev.yml
 redis/data/*
 ssl/fullchain.pem
 ssl/privkey.pem
+redis_ssr/data/*
