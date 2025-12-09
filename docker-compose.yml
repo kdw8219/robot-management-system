@@ -52,15 +52,6 @@ services:
       timescaledb:
         condition: service_started
 
-  robot-api:
-    ports:
-      - "8000:8000"
-    expose:
-      - "8000"
-    depends_on:
-      kafka-broker:
-        condition: service_healthy
-
   redis:
     ports:
       - "6379:6379"
@@ -83,6 +74,15 @@ services:
     depends_on:
       - redis
       - timescaledb
+
+  grpc-robot-api:
+    ports:
+      - "50051:50051"
+    expose:
+      - "50051"
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
 
   robots:
     ports:
