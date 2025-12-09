@@ -82,3 +82,8 @@ services:
     env_file:
       - ./env/prd/redis.env
     restart: always
+
+  grpc-robot-api:
+    image: ghcr.io/kdw8219/grpc-robot-api:latest
+    env_file:
+      - ./env/prd/grpc-robot-api.env

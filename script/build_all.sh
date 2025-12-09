@@ -5,6 +5,9 @@ REGISTRY="ghcr.io/kdw8219"
 echo "Building ingress-rust..."
 docker build -t $REGISTRY/ingress-rust:latest ../ingress-rust
 
+echo "Building grpc-robot-api..."
+docker build -t $REGISTRY/grpc-robot-api:latest ../grpc-robot-gateway
+
 echo "Building robot-api-gateway..."
 docker build -t $REGISTRY/robot-api-gateway:latest ../robot-api-gateway
 
