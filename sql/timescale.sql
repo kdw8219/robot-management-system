@@ -48,7 +48,7 @@ CREATE TABLE robot_pos (
     orig_y           DOUBLE PRECISION NOT NULL,
     orig_z           DOUBLE PRECISION NOT NULL,
     orig_w           DOUBLE PRECISION NOT NULL,
-    linear_angle           DOUBLE PRECISION NOT NULL,
+    linear_speed           DOUBLE PRECISION NOT NULL,
     angular_speed           DOUBLE PRECISION NOT NULL,
     timestamp           TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (robot_id, timestamp)
