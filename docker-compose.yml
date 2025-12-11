@@ -109,6 +109,17 @@ services:
       - robots
       - user
 
+  realtime-control-gateway:
+    ports:
+      - "8001:8080"
+    depends_on:
+      - kafka-broker
+      - timescaledb
+      - redis
+      - auth
+      - robots
+      - user
+
 volumes:
   timescale-data:
   static_volume:
