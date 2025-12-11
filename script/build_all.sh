@@ -9,7 +9,7 @@ echo "Building grpc-robot-api..."
 docker build -t $REGISTRY/grpc-robot-api:latest ../grpc-robot-gateway
 
 echo "Building robot-api-gateway..."
-docker build -t $REGISTRY/robot-api-gateway:latest ../robot-api-gateway
+docker build -t $REGISTRY/realtime-control-gateway:latest ../realtime-control-gateway
 
 echo "Building auth-service..."
 docker build -t $REGISTRY/auth-service:latest ../auth-service/auth_service
