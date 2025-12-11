@@ -42,11 +42,6 @@ services:
     env_file:
       - ./env/prd/ingress.env
 
-  robot-api:
-    image: ghcr.io/kdw8219/robot-api-gateway:latest
-    env_file:
-      - ./env/prd/robot-api.env
-
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -82,6 +77,12 @@ services:
     env_file:
       - ./env/prd/redis.env
     restart: always
+
+  realtime-control-gateway:
+    container_name: realtime_control_gateway
+    image: ghcr.io/kdw8219/realtime-control-gateway:latest
+    env_file:
+      - ./env/prd/realtime-control-gateway.env
 
   grpc-robot-api:
     image: ghcr.io/kdw8219/grpc-robot-api:latest
