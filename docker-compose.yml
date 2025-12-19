@@ -75,7 +75,7 @@ services:
       - redis
       - timescaledb
 
-  grpc-robot-api:
+  grpc-robot-gateway:
     ports:
       - "50051:50051"
     expose:

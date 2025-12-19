@@ -84,7 +84,7 @@ services:
     env_file:
       - ./env/prd/realtime-control-gateway.env
 
-  grpc-robot-api:
+  grpc-robot-gateway:
     image: ghcr.io/kdw8219/grpc-robot-api:latest
     env_file:
       - ./env/prd/grpc-robot-api.env
