@@ -108,6 +108,8 @@ services:
       - auth
       - robots
       - user
+      - realtime-control-gateway
+      - grpc-robot-gateway
 
   realtime-control-gateway:
     expose:
@@ -121,6 +123,7 @@ services:
       - auth
       - robots
       - user
+      - grpc-robot-gateway
 
 volumes:
   timescale-data:
