@@ -6,10 +6,12 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "443:443"
+    restart: always
     volumes:
       - static_volume:/app/static
     depends_on:
       - django-ssr
+      - realtime-control-gateway
 
   kafka-broker:
     expose:
@@ -109,13 +111,13 @@ services:
       - robots
       - user
       - realtime-control-gateway
-      - grpc-robot-gateway
-
+      
   realtime-control-gateway:
     expose:
       - "8001"
     ports:
       - "8001:8001"
+    restart: always
     depends_on:
       - kafka-broker
       - timescaledb
