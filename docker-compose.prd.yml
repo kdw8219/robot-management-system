@@ -1,11 +1,15 @@
 services:
   nginx:
     image: nginx:latest
+    restart: always
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./ssl/fullchain.pem:/etc/nginx/ssl/fullchain.pem:ro
       - ./ssl/privkey.pem:/etc/nginx/ssl/privkey.pem:ro
       - ./django-ssr/static:/app/static
+    depends_on:
+      - django-ssr
+      - realtime-control-gateway
 
   kafka-broker:
     image: apache/kafka:latest
@@ -83,6 +87,7 @@ services:
     image: ghcr.io/kdw8219/realtime-control-gateway:latest
     env_file:
       - ./env/prd/realtime-control-gateway.env
+    restart: always
 
   grpc-robot-gateway:
     image: ghcr.io/kdw8219/grpc-robot-api:latest
