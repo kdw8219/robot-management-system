@@ -1,0 +1,552 @@
+apiVersion: v1
+# PVC/Deployment/Service/Ingress 등을 한 파일로 묶어서
+# docker-compose에 있던 서비스들을 k8s 리소스로 그대로 재현한다.
+kind: PersistentVolumeClaim
+metadata:
+  name: timescale-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: django-static
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-broker
+  template:
+    metadata:
+      labels:
+        app: kafka-broker
+    spec:
+      containers:
+        - name: kafka-broker
+          image: apache/kafka:latest
+          envFrom:
+            - configMapRef:
+                name: kafka-broker-env
+          ports:
+            - containerPort: 9092
+            - containerPort: 9093
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-broker
+spec:
+  selector:
+    app: kafka-broker
+  ports:
+    - name: plaintext
+      port: 9092
+      targetPort: 9092
+    - name: controller
+      port: 9093
+      targetPort: 9093
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+    spec:
+      containers:
+        - name: kafka-ui
+          image: provectuslabs/kafka-ui:latest
+          envFrom:
+            - configMapRef:
+                name: kafka-ui-env
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-ui
+spec:
+  selector:
+    app: kafka-ui
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-init
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: kafka-init
+          image: apache/kafka:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo 'Waiting for kafka...';
+              for i in 1 2 3 4 5 6 7 8 9 10; do
+                /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka-broker:9092 --list >/dev/null 2>&1 && break;
+                echo 'retry...';
+                sleep 2;
+              done;
+              echo 'Running topic script';
+              sh /topic-scripts/topic_checker.sh;
+              echo 'Done';
+          env:
+            - name: KAFKA_BOOTSTRAP
+              value: kafka-broker:9092
+          volumeMounts:
+            - name: kafka-scripts
+              mountPath: /topic-scripts
+      volumes:
+        - name: kafka-scripts
+          configMap:
+            name: kafka-scripts
+            defaultMode: 0755
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: timescaledb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: timescaledb
+  template:
+    metadata:
+      labels:
+        app: timescaledb
+    spec:
+      containers:
+        - name: timescaledb
+          image: timescale/timescaledb:latest-pg16
+          envFrom:
+            - configMapRef:
+                name: timescaledb-env
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: timescale-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: timescale-data
+          persistentVolumeClaim:
+            claimName: timescale-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: timescaledb
+spec:
+  selector:
+    app: timescaledb
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command: ["sh", "/redis-entrypoint.sh"]
+          envFrom:
+            - configMapRef:
+                name: redis-env
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+            - name: redis-config
+              subPath: base.conf
+              mountPath: /base.conf
+            - name: redis-config
+              subPath: redis-entrypoint.sh
+              mountPath: /redis-entrypoint.sh
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis-data
+        - name: redis-config
+          configMap:
+            name: redis-config
+            defaultMode: 0755
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-ssr
+spec:
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-rust
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingress-rust
+  template:
+    metadata:
+      labels:
+        app: ingress-rust
+    spec:
+      containers:
+        - name: ingress-rust
+          image: ghcr.io/kdw8219/ingress-rust:latest
+          envFrom:
+            - configMapRef:
+                name: ingress-env
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - name: auth
+          image: ghcr.io/kdw8219/auth-service:latest
+          envFrom:
+            - configMapRef:
+                name: auth-env
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+spec:
+  selector:
+    app: auth
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: robots
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: robots
+  template:
+    metadata:
+      labels:
+        app: robots
+    spec:
+      containers:
+        - name: robots
+          image: ghcr.io/kdw8219/robot-service:latest
+          envFrom:
+            - configMapRef:
+                name: robots-env
+          ports:
+            - containerPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: robots
+spec:
+  selector:
+    app: robots
+  ports:
+    - name: http
+      port: 3001
+      targetPort: 3001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user
+  template:
+    metadata:
+      labels:
+        app: user
+    spec:
+      containers:
+        - name: user
+          image: ghcr.io/kdw8219/user-service:latest
+          envFrom:
+            - configMapRef:
+                name: user-env
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user
+spec:
+  selector:
+    app: user
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-ssr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: django-ssr
+  template:
+    metadata:
+      labels:
+        app: django-ssr
+    spec:
+      containers:
+        - name: django-ssr
+          image: ghcr.io/kdw8219/django-ssr:latest
+          envFrom:
+            - configMapRef:
+                name: django-env
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: django-static
+              mountPath: /app/static
+      volumes:
+        - name: django-static
+          persistentVolumeClaim:
+            claimName: django-static
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-ssr
+spec:
+  selector:
+    app: django-ssr
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realtime-control-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: realtime-control-gateway
+  template:
+    metadata:
+      labels:
+        app: realtime-control-gateway
+    spec:
+      containers:
+        - name: realtime-control-gateway
+          image: ghcr.io/kdw8219/realtime-control-gateway:latest
+          envFrom:
+            - configMapRef:
+                name: realtime-control-gateway-env
+          ports:
+            - containerPort: 8001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: realtime-control-gateway
+spec:
+  selector:
+    app: realtime-control-gateway
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-robot-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-robot-gateway
+  template:
+    metadata:
+      labels:
+        app: grpc-robot-gateway
+    spec:
+      containers:
+        - name: grpc-robot-gateway
+          image: ghcr.io/kdw8219/grpc-robot-api:latest
+          envFrom:
+            - configMapRef:
+                name: grpc-robot-gateway-env
+          ports:
+            - containerPort: 50051
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-robot-gateway
+spec:
+  selector:
+    app: grpc-robot-gateway
+  ports:
+    - name: grpc
+      port: 50051
+      targetPort: 50051
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              subPath: nginx.conf
+              mountPath: /etc/nginx/conf.d/default.conf
+            - name: django-static
+              mountPath: /app/static
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+        - name: django-static
+          persistentVolumeClaim:
+            claimName: django-static
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  selector:
+    app: nginx
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: robot-web
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: robot.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx
+                port:
+                  number: 80
