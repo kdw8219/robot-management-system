@@ -4,8 +4,8 @@ kind: Kustomization
 namespace: robot-system
 
 # 이 kustomization은 기존 docker-compose 서비스 구성을 k8s로 옮기기 위한 기본 묶음이다.
-# env/prd/*.env 를 ConfigMap으로 변환해 각 서비스 컨테이너에 주입한다.
-# redis/nginx/kafka 보조 스크립트/설정도 ConfigMap으로 묶어 마운트한다.
+# k8s/base/env/*.env 를 ConfigMap으로 변환해 각 서비스 컨테이너에 주입한다.
+# redis/nginx/kafka 보조 스크립트/설정도 k8s/base에 복사해 ConfigMap으로 묶어 마운트한다.
 
 resources:
   - namespace.yaml
@@ -17,44 +17,44 @@ generatorOptions:
 configMapGenerator:
   - name: kafka-broker-env
     envs:
-      - ../../env/prd/kafka-broker.env
+      - env/kafka-broker.env
   - name: kafka-ui-env
     envs:
-      - ../../env/prd/kafka-ui.env
+      - env/kafka-ui.env
   - name: timescaledb-env
     envs:
-      - ../../env/prd/timescale.env
+      - env/timescale.env
   - name: ingress-env
     envs:
-      - ../../env/prd/ingress.env
+      - env/ingress.env
   - name: auth-env
     envs:
-      - ../../env/prd/auth.env
+      - env/auth.env
   - name: robots-env
     envs:
-      - ../../env/prd/robots.env
+      - env/robots.env
   - name: user-env
     envs:
-      - ../../env/prd/user.env
+      - env/user.env
   - name: django-env
     envs:
       - django.env
   - name: realtime-control-gateway-env
     envs:
-      - ../../env/prd/realtime-control-gateway.env
+      - env/realtime-control-gateway.env
   - name: grpc-robot-gateway-env
     envs:
-      - ../../env/prd/grpc-robot-api.env
+      - env/grpc-robot-api.env
   - name: redis-env
     envs:
-      - ../../env/prd/redis.env
+      - env/redis.env
   - name: redis-config
     files:
-      - ../../conf/redis/base.conf
-      - ../../conf/redis/redis-entrypoint.sh
+      - redis/base.conf
+      - redis/redis-entrypoint.sh
   - name: nginx-config
     files:
       - nginx.conf
   - name: kafka-scripts
     files:
-      - ../../kafka/script/topic_checker.sh
+      - kafka/topic_checker.sh
