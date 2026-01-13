@@ -168,10 +168,16 @@ spec:
           volumeMounts:
             - name: timescale-data
               mountPath: /var/lib/postgresql/data
+            - name: timescale-init
+              mountPath: /docker-entrypoint-initdb.d/timescale.sql
+              subPath: timescale.sql
       volumes:
         - name: timescale-data
           persistentVolumeClaim:
             claimName: timescale-data
+        - name: timescale-init
+          configMap:
+            name: timescale-init
 ---
 apiVersion: v1
 kind: Service

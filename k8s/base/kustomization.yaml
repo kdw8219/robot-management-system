@@ -58,3 +58,6 @@ configMapGenerator:
   - name: kafka-scripts
     files:
       - kafka/topic_checker.sh
+  - name: timescale-init
+    files:
+      - sql/timescale.sql
