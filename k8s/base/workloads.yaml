@@ -404,6 +404,16 @@ spec:
       labels:
         app: django-ssr
     spec:
+      initContainers:
+        - name: collect-static
+          image: ghcr.io/kdw8219/django-ssr:latest
+          command:
+            - /bin/sh
+            - -c
+            - cp -R /app/static/. /static/ || true
+          volumeMounts:
+            - name: django-static
+              mountPath: /static
       imagePullSecrets:
         - name: ghcr-creds
       containers:
@@ -501,12 +511,14 @@ kind: Service
 metadata:
   name: grpc-robot-gateway
 spec:
+  type: NodePort
   selector:
     app: grpc-robot-gateway
   ports:
     - name: grpc
       port: 50051
       targetPort: 50051
+      nodePort: 32051
 ---
 apiVersion: apps/v1
 kind: Deployment
