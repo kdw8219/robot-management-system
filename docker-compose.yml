@@ -62,6 +62,17 @@ services:
       - ./conf/redis/base.conf:/base.conf:ro
       - ./conf/redis/redis-entrypoint.sh:/redis-entrypoint.sh:ro
 
+  minio:
+    image: minio/minio:RELEASE.2024-06-13T22-53-53Z
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    env_file:
+      - ./env/prd/minio.env
+    volumes:
+      - ./minio/data:/data
+
   auth:
     ports:
       - "8080:8080"
