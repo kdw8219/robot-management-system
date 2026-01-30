@@ -48,6 +48,9 @@ configMapGenerator:
   - name: redis-env
     envs:
       - env/redis.env
+  - name: minio-env
+    envs:
+      - env/minio.env
   - name: redis-config
     files:
       - redis/base.conf
